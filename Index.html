@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CampusTask Wukari: your account</title>
+<meta name="theme-color" content="#0B2545">
+<style>
+:root{
+  --navy:#0B2545; --navy-2:#13315C; --ink:#14213D; --amber:#F5A524; --amber-d:#C47F0A;
+  --white:#fff; --tint:#F2F5FA; --line:#D8E0EC; --muted:#4A5A75;
+  --r:12px; --font:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font:1rem/1.6 var(--font);color:var(--ink);background:var(--white)}
+.wrap{width:min(1100px,100% - 2rem);margin-inline:auto}
+h1,h2,h3{line-height:1.15;margin:0 0 .6em;color:var(--navy)}
+h2{font-size:1.5rem}
+p{margin:0 0 1em;max-width:62ch}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.btn{font:inherit;cursor:pointer;border:2px solid transparent;border-radius:var(--r);padding:.6rem 1.1rem;font-weight:600;min-height:44px}
+.btn-amber{background:var(--amber);color:var(--navy)}
+.btn-navy{background:var(--navy);color:#fff}
+.btn-ghost{background:transparent;color:var(--navy);border-color:var(--line)}
+.site-header{position:sticky;top:0;z-index:20;background:var(--white);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;min-height:64px;gap:1rem}
+.brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:var(--navy);font-weight:500}
+.brand b{font-weight:800}
+.logo{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--navy);color:var(--amber);font-weight:800;font-size:.85rem}
+.toast{position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.8rem 1.1rem;border-radius:var(--r);max-width:calc(100% - 2rem);z-index:50}
+.page{padding:2rem 0 4rem;max-width:560px}
+.appnav{display:flex;gap:.25rem;flex-wrap:wrap}
+.appnav a,.appnav button{color:var(--navy);text-decoration:none;font:inherit;font-weight:600;padding:.5rem .6rem;background:none;border:0;cursor:pointer;min-height:44px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.2rem;margin-bottom:1rem}
+label{display:block;font-weight:600;margin:.9rem 0 .3rem;color:var(--navy)}
+input,select,textarea{width:100%;font:inherit;padding:.7rem .8rem;border:2px solid var(--line);border-radius:10px;min-height:44px;background:#fff}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);outline:none}
+input[type=checkbox]{width:auto;min-height:0;margin-right:.5rem}
+.check{display:flex;align-items:flex-start;font-weight:400;gap:.2rem}
+.msg{padding:.8rem 1rem;border-radius:10px;margin:1rem 0;font-weight:500}
+.msg.err{background:#FDECEC;color:#8A1C1C}.msg.ok{background:#E6F5EC;color:#14532D}.msg.info{background:var(--tint);color:var(--navy)}
+.badge{display:inline-block;padding:.15rem .6rem;border-radius:99px;background:var(--amber);color:var(--navy);font-weight:700;font-size:.85rem}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
+.small{font-size:.9rem;color:var(--muted)}
+button[disabled]{opacity:.6;cursor:wait}
+.dark{color:var(--navy);font-size:1.8rem}
+</style>
+</head>
+<body>
+<header class="site-header"><div class="wrap bar">
+  <a class="brand" href="#login"><span class="logo" aria-hidden="true">CT</span><span>CampusTask <b>Wukari</b></span></a>
+  <nav class="appnav" id="appnav" aria-label="Account"></nav>
+</div></header>
+<main class="wrap page" id="view" aria-live="polite"><p>Loading…</p></main>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+window.CT_CONFIG = {
+  SUPABASE_URL: "https://vbpbiblauqhqwewvktsp.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZicGJpYmxhdXFocXdld3ZrdHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTMxOTEsImV4cCI6MjEwODc4OTE5MX0.ajvjzK9Zf_qDfVpIcZwfr0wD2ChYTtTkwnsn6nVzCcs"
+};
+</script>
+<script>
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CT_CONFIG;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const view = $('view'), nav = $('appnav');
+let me = null;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const msg = (t, k = 'err') => `<div class="msg ${k}" role="${k === 'err' ? 'alert' : 'status'}">${esc(t)}</div>`;
+const show = html => { view.innerHTML = html; };
+const go = h => { location.hash = h; };
+const when = d => d ? new Date(d).toLocaleString() : '';
+
+async function loadMe() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { me = null; return; }
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+  me = { user: session.user, profile };
+}
+
+function renderNav() {
+  if (!me) { nav.innerHTML = '<a href="#login">Log in</a><a href="#register">Sign up</a>'; return; }
+  const adm = me.profile?.role === 'admin' ? '<a href="#admin">Admin</a>' : '';
+  nav.innerHTML = `<a href="#account">Account</a>${adm}<button id="out">Log out</button>`;
+  $('out').onclick = async () => { await sb.auth.signOut(); me = null; go('login'); route(); };
+}
+
+function busy(form, on) { form.querySelectorAll('button').forEach(b => b.disabled = on); }
+
+function loginView(note = '') {
+  show(`<h1 class="dark">Log in</h1>${note}
+  <form id="f" class="card"><label for="e">Email</label><input id="e" type="email" required autocomplete="email">
+  <label for="p">Password</label><input id="p" type="password" required autocomplete="current-password">
+  <div id="m"></div><div class="row"><button class="btn btn-navy">Log in</button></div>
+  <p class="small"><a href="#forgot">Forgot password?</a> · No account? <a href="#register">Sign up</a></p></form>`);
+  $('f').onsubmit = async e => {
+    e.preventDefault(); busy(e.target, true);
+    const { error } = await sb.auth.signInWithPassword({ email: $('e').value.trim(), password: $('p').value });
+    busy(e.target, false);
+    if (error) return $('m').innerHTML = msg('Could not log in. Check your email and password.');
+    await route('account');
+  };
+}
+
+function registerView() {
+  show(`<h1 class="dark">Create your account</h1>
+  <form id="f" class="card"><label for="n">Full name</label><input id="n" required minlength="2" autocomplete="name">
+  <label for="e">Email</label><input id="e" type="email" required autocomplete="email">
+  <label for="p">Password (at least 8 characters)</label><input id="p" type="password" required minlength="8" autocomplete="new-password">
+  <p class="small">We never ask for your school portal password.</p>
+  <div id="m"></div><div class="row"><button class="btn btn-amber">Sign up</button></div>
+  <p class="small">Already registered? <a href="#login">Log in</a></p></form>`);
+  $('f').onsubmit = async e => {
+    e.preventDefault(); busy(e.target, true);
+    const { data, error } = await sb.auth.signUp({ email: $('e').value.trim(), password: $('p').value,
+      options: { data: { full_name: $('n').value.trim() } } });
+    busy(e.target, false);
+    if (error) return $('m').innerHTML = msg(error.message);
+    if (!data.session) return $('m').innerHTML = msg('Account created. Check your email to confirm it, then log in.', 'ok');
+    await route('account');
+  };
+}
+
+function forgotView() {
+  show(`<h1 class="dark">Reset password</h1><form id="f" class="card"><label for="e">Email</label>
+  <input id="e" type="email" required><div id="m"></div><div class="row"><button class="btn btn-navy">Send reset link</button></div></form>`);
+  $('f').onsubmit = async e => {
+    e.preventDefault(); busy(e.target, true);
+    const { error } = await sb.auth.resetPasswordForEmail($('e').value.trim(), { redirectTo: location.origin + location.pathname });
+    busy(e.target, false);
+    $('m').innerHTML = error ? msg(error.message) : msg('If that email has an account, a reset link has been requested. Check your inbox.', 'info');
+  };
+}
+
+function newPasswordView() {
+  show(`<h1 class="dark">Choose a new password</h1><form id="f" class="card"><label for="p">New password (8+ characters)</label>
+  <input id="p" type="password" required minlength="8" autocomplete="new-password"><div id="m"></div>
+  <div class="row"><button class="btn btn-navy">Save password</button></div></form>`);
+  $('f').onsubmit = async e => {
+    e.preventDefault(); busy(e.target, true);
+    const { error } = await sb.auth.updateUser({ password: $('p').value });
+    busy(e.target, false);
+    if (error) return $('m').innerHTML = msg(error.message);
+    await route('account');
+  };
+}
+
+async function accountView() {
+  const p = me.profile;
+  const { data: notes } = await sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(10);
+  const list = (notes || []).map(n => `<div class="card"><b>${esc(n.title)}</b><br>${esc(n.body)}<div class="small">${when(n.created_at)}</div></div>`).join('')
+    || '<p class="small">No notifications yet.</p>';
+  show(`<h1 class="dark">Hello, ${esc(p.full_name || 'there')}</h1>
+  <p>Role: <span class="badge">${esc(p.role)}</span> ${p.status === 'suspended' ? msg('Your account is suspended. Contact support.') : ''}</p>
+  <form id="f" class="card"><label for="n">Full name</label><input id="n" value="${esc(p.full_name)}" required>
+  <label for="ph">Phone (optional)</label><input id="ph" value="${esc(p.phone)}" inputmode="tel" autocomplete="tel">
+  <div id="m"></div><div class="row"><button class="btn btn-navy">Save profile</button>
+  ${p.role === 'customer' ? '<a class="btn btn-amber" href="#apply" style="text-decoration:none;display:inline-grid;align-items:center">Become a runner</a>' : ''}</div></form>
+  <h2>Notifications</h2>${list}`);
+  $('f').onsubmit = async e => {
+    e.preventDefault(); busy(e.target, true);
+    const { error } = await sb.from('profiles').update({ full_name: $('n').value.trim(), phone: $('ph').value.trim() || null }).eq('id', me.user.id);
+    busy(e.target, false);
+    if (!error) await loadMe();
+    $('m').innerHTML = error ? msg(error.message) : msg('Profile saved.', 'ok');
+  };
+}
+
+async function applyView() {
+  const { data: app } = await sb.from('runner_applications').select('*').eq('user_id', me.user.id).maybeSingle();
+  if (app) {
+    const k = { pending: 'info', approved: 'ok', rejected: 'err' }[app.status];
+    return show(`<h1 class="dark">Runner application</h1>${msg('Status: ' + app.status + (app.review_note ? '. ' + app.review_note : ''), k)}
+    <p class="small">Submitted ${when(app.created_at)}. You can accept real errands only after approval.</p>`);
+  }
+  show(`<h1 class="dark">Become a runner</h1><p>Give only what is needed to confirm you are a student. An administrator reviews every application.</p>
+  <form id="f" class="card"><label for="mat">Matric number</label><input id="mat" required>
+  <label for="dep">Department</label><input id="dep" required>
+  <label for="lvl">Level</label><select id="lvl" required><option value="">Choose</option><option>100</option><option>200</option><option>300</option><option>400</option><option>500</option><option>Postgraduate</option></select>
+  <label for="doc">Photo of your student ID (JPG, PNG or PDF, max 3 MB)</label><input id="doc" type="file" accept="image/jpeg,image/png,application/pdf" required>
+  <label class="check"><input id="terms" type="checkbox" required> I accept the runner terms, safety rules and payment policy.</label>
+  <div id="m"></div><div class="row"><button class="btn btn-amber">Submit application</button></div></form>`);
+  $('f').onsubmit = async e => {
+    e.preventDefault();
+    const file = $('doc').files[0];
+    if (file.size > 3 * 1024 * 1024) return $('m').innerHTML = msg('That file is over 3 MB. Choose a smaller photo.');
+    busy(e.target, true);
+    const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' }[file.type];
+    if (!ext) { busy(e.target, false); return $('m').innerHTML = msg('Use a JPG, PNG or PDF file.'); }
+    const path = `${me.user.id}/id-${Date.now()}.${ext}`;
+    const up = await sb.storage.from('verification-docs').upload(path, file, { contentType: file.type });
+    if (up.error) { busy(e.target, false); return $('m').innerHTML = msg('Upload failed: ' + up.error.message); }
+    const { error } = await sb.from('runner_applications').insert({
+      user_id: me.user.id, matric_number: $('mat').value.trim(), department: $('dep').value.trim(),
+      level: $('lvl').value, id_document_path: path, accepted_terms_at: new Date().toISOString() });
+    busy(e.target, false);
+    if (error) return $('m').innerHTML = msg(error.message);
+    applyView();
+  };
+}
+
+async function adminView() {
+  if (me.profile?.role !== 'admin') return show(msg('This page is for administrators.'));
+  const { data, error } = await sb.from('runner_applications')
+    .select('*, profiles!runner_applications_user_id_fkey(full_name, phone)').eq('status', 'pending').order('created_at');
+  if (error) return show(msg(error.message));
+  show(`<h1 class="dark">Runner applications</h1>` + (data.length ? data.map(a => `
+    <div class="card" data-id="${a.id}"><b>${esc(a.profiles?.full_name)}</b> <span class="small">${esc(a.profiles?.phone || '')}</span>
+    <p>Matric: ${esc(a.matric_number)}<br>${esc(a.department)}, ${esc(a.level)} level<br><span class="small">Applied ${when(a.created_at)}</span></p>
+    <button class="btn btn-ghost doc" data-path="${esc(a.id_document_path)}">View ID document</button>
+    <label>Note to applicant (optional)</label><input class="note">
+    <div class="row"><button class="btn btn-navy dec" data-d="approved">Approve</button><button class="btn btn-ghost dec" data-d="rejected">Reject</button></div></div>`).join('')
+    : '<div class="card">No pending applications.</div>') + '<div id="m"></div>');
+  view.querySelectorAll('.doc').forEach(b => b.onclick = async () => {
+    const { data: s, error: e } = await sb.storage.from('verification-docs').createSignedUrl(b.dataset.path, 120);
+    if (e) return $('m').innerHTML = msg(e.message);
+    window.open(s.signedUrl, '_blank', 'noopener');
+  });
+  view.querySelectorAll('.dec').forEach(b => b.onclick = async () => {
+    const card = b.closest('.card'); b.disabled = true;
+    const { error: e } = await sb.rpc('review_runner_application', { app_id: card.dataset.id, decision: b.dataset.d, note: card.querySelector('.note').value.trim() || null });
+    if (e) { b.disabled = false; return $('m').innerHTML = msg(e.message); }
+    adminView();
+  });
+}
+
+const protectedViews = ['account', 'apply', 'admin'];
+async function route(force) {
+  if (force) history.replaceState(null, '', '#' + force);
+  await loadMe(); renderNav();
+  const r = (location.hash || '#login').slice(1);
+  if (protectedViews.includes(r) && !me) return loginView(msg('Please log in to continue.', 'info'));
+  if (me && ['login', 'register'].includes(r)) return route('account');
+  ({ login: () => loginView(), register: registerView, forgot: forgotView, newpw: newPasswordView,
+     account: accountView, apply: applyView, admin: adminView }[r] || (() => loginView()))();
+}
+sb.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') { renderNav(); newPasswordView(); } });
+window.addEventListener('hashchange', () => route());
+route();
+</script>
+</body>
+</html>
